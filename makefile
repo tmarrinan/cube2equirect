@@ -19,7 +19,7 @@ endif
 
 # object files have corresponding source files
 OBJDIR= objs
-OBJS= $(addprefix $(OBJDIR)/, main.o glMatrix.o cube2equirect.o)
+OBJS= $(addprefix $(OBJDIR)/, main.o cube2equirect.o)
 CXX= g++
 COMPILER_FLAGS= -g
 INCLUDE= $(SDL_INC) $(PNG_INC) $(OPENGL_INC) 
