@@ -1,0 +1,16 @@
+# output image sequeces are saved here:
+#   equirect_000000.png
+#   equirect_000001.png
+#   equirect_000002.png
+#   ....
+#   equirect_001648.png
+#   ....
+#
+# use ffmpeg to create movie
+#   ffmpeg -r 24 -i equirect_%06d.png -r 24 -c:v libx264 -pix_fmt yuv420p output_mov.mp4
+#
+#    -r                   ==>  input framerate (# images per second)
+#    equirect_%06d.jpg    ==>  { equirect_000000.png, equirect_000001.png, ... }
+#    -r                   ==>  output framerate (24 fps is good)
+#    libx264              ==>  video encoder
+#    output_mov.mp4       ==>  output file in MP4 format
