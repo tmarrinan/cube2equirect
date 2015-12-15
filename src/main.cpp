@@ -15,27 +15,37 @@ SDL_Window *mainwindow;         // Window handle
 SDL_GLContext maincontext;      // OpenGL context handle
 cube2equirect *renderer;        // Renderer
 
+void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution);
 void idle();
 void SDL_Die(const char *msg);
 void SDL_MainLoop();
 
 int main(int argc, char **argv) {
-	if (argc < 2) {
-		printf("Please specify directory with cubemap images\n");
+	if (argc < 3) {
+		printf("\n");
+		printf("  Usage: cube2equirect [options]\n");
+		printf("\n");
+		printf("  Options:\n");
+		printf("\n");
+		printf("    -i, --input <DIRECTORY>      directory with cubemap image set sequence\n");
+		printf("    -o, --output <DIRECTORY>     directory to save equirectangular images [Default: \'output/\']\n");
+		printf("    -r, --resolution-h <NUMBER>  horizontal resolution of output images [Default: 3840]\n");
+		printf("\n");
 		return 0;
 	}
 
-	struct stat info;
 	string cubeDataDir;
-	if (stat(argv[1], &info) != 0) {
-		printf( "\"%s\" does not exist or cannot be accessed, please specify directory with cubemap images\n", argv[1]);
+	string equirectDataDir;
+	int hResolution;
+	parseArguments(argc, argv, &cubeDataDir, &equirectDataDir, &hResolution);
+
+	struct stat info;
+	if (stat(cubeDataDir.c_str(), &info) != 0) {
+		printf("\"%s\" does not exist or cannot be accessed, please specify directory with cubemap images\n", cubeDataDir.c_str());
 		return 0;
 	}
-	else if (info.st_mode & S_IFDIR) {
-		cubeDataDir = argv[1];
-	}
-	else {
-		printf( "\"%s\" is not a directory, please specify directory with cubemap images\n", argv[1]);
+	else if (!(info.st_mode & S_IFDIR)) {
+		printf("\"%s\" is not a directory, please specify directory with cubemap images\n", cubeDataDir.c_str());
 		return 0;
 	}
 
@@ -69,7 +79,7 @@ int main(int argc, char **argv) {
 	printf("Using OpenGL %s, GLSL %s\n", glVersion, glslVersion);
 
 	renderer = new cube2equirect(mainwindow);
-	renderer->initGL(cubeDataDir);
+	renderer->initGL(cubeDataDir, equirectDataDir, hResolution);
 	renderer->render();
 	idle();
 
@@ -77,6 +87,55 @@ int main(int argc, char **argv) {
 	//SDL_Quit();
 
 	return 0;
+}
+
+void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution) {
+	*outputDir = "output/";
+	*resolution = 3840;
+	bool hasInput = false;
+
+	if (argc >= 3) {
+		if (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "--input") == 0) {
+			*inputDir = argv[2];
+			hasInput = true;
+		}
+		else if (strcmp(argv[1], "-o") == 0 || strcmp(argv[1], "--output") == 0) {
+			*outputDir = argv[2];
+		}
+		else if (strcmp(argv[1], "-r") == 0 || strcmp(argv[1], "--resolution-h") == 0) {
+			*resolution = atoi(argv[2]);
+		}
+	}
+	if (argc >= 5) {
+		if (strcmp(argv[3], "-i") == 0 || strcmp(argv[3], "--input") == 0) {
+			*inputDir = argv[4];
+			hasInput = true;
+		}
+		else if (strcmp(argv[3], "-o") == 0 || strcmp(argv[3], "--output") == 0) {
+			*outputDir = argv[4];
+		}
+		else if (strcmp(argv[3], "-r") == 0 || strcmp(argv[3], "--resolution-h") == 0) {
+			*resolution = atoi(argv[4]);
+		}
+	}
+	if (argc >= 7) {
+		if (strcmp(argv[5], "-i") == 0 || strcmp(argv[5], "--input") == 0) {
+			*inputDir = argv[6];
+			hasInput = true;
+		}
+		else if (strcmp(argv[5], "-o") == 0 || strcmp(argv[5], "--output") == 0) {
+			*outputDir = argv[6];
+		}
+		else if (strcmp(argv[5], "-r") == 0 || strcmp(argv[5], "--resolution-h") == 0) {
+			*resolution = atoi(argv[6]);
+		}
+	}
+
+	if (!hasInput) {
+		printf("please specify an input directory with cubemap images\n");
+		SDL_Quit();
+		exit(0);
+	}
 }
 
 void idle() {

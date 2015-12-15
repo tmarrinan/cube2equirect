@@ -7,18 +7,20 @@ cube2equirect::cube2equirect(SDL_Window *win) {
 
 	frameCount = 0;
 	sprintf(frameIdx, "%06d", frameCount);
-
-	equirectW = 3840;
-	equirectH = 1920;
-	equirectPixels = (GLubyte*)malloc(4*equirectW*equirectH*sizeof(GLubyte));
 }
 
-void cube2equirect::initGL(string dir) {
+void cube2equirect::initGL(string inDir, string outDir, int outRes) {
 	SDL_GL_SetSwapInterval(1);
 
-	cubemapDir = dir;
+	cubemapDir = inDir;
 	if (cubemapDir[cubemapDir.length()-1] != '/')
 		cubemapDir += "/";
+	equirectDir = outDir;
+	if (equirectDir[equirectDir.length()-1] != '/')
+		equirectDir += "/";
+	equirectW = outRes;
+	equirectH = equirectW / 2;
+	equirectPixels = (GLubyte*)malloc(4*equirectW*equirectH*sizeof(GLubyte));
 
 	glViewport(0, 0, equirectW, equirectH);
 
@@ -74,7 +76,7 @@ void cube2equirect::render() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// save pixel buffer as image
-	saveImagePNG("output/equirect_" + string(frameIdx) + ".png", equirectPixels, equirectW, equirectH);
+	saveImagePNG(equirectDir + "equirect_" + frameIdx + ".png", equirectPixels, equirectW, equirectH);
 
 
 	frameCount++;

@@ -5,7 +5,11 @@ Converts cubemap data sets to an equirectuangular projection image
 
 ## Run ##
 
-* `./cube2equirect <path_to_cubemap_directory>`
+* `./cube2equirect [options]`
+    * options:
+        * -i, --input <DIRECTORY>      directory with cubemap image set sequence
+        * -o, --output <DIRECTORY>     directory to save equirectangular images [Default: 'output/']
+        * -r, --resolution-h <NUMBER>  horizontal resolution of output images [Default: 3840]
     * cubemap files should be named:
         * 000000_left.jpg
         * 000000_right.jpg

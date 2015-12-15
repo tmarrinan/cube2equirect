@@ -44,6 +44,7 @@ private:
 	int frameCount;
 	char frameIdx[7];
 	std::string cubemapDir;
+	std::string equirectDir;
 
 	GLint equirectW;
 	GLint equirectH;
@@ -51,7 +52,7 @@ private:
 
 public:
 	cube2equirect(SDL_Window *win);
-	void initGL(std::string dir);
+	void initGL(std::string inDir, std::string outDir, int outRes);
 	void render();
 	bool hasMoreFrames();
 	void initBuffers();
