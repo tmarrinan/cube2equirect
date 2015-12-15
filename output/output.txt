@@ -1,4 +1,4 @@
-# output image sequeces are saved here:
+# output image sequeces are saved here (by default):
 #   equirect_000000.png
 #   equirect_000001.png
 #   equirect_000002.png
