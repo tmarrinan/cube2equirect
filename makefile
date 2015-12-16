@@ -6,15 +6,15 @@ ifeq ($(MACHINE),Darwin)
 	OPENGL_LIB= -framework OpenGL
 	SDL_INC= `sdl2-config --cflags`
 	SDL_LIB= `sdl2-config --libs` -lSDL2_image
-	PNG_INC= -I/usr/local/include
-	PNG_LIB= -lpng
+	IMG_INC= -I/usr/local/include
+	IMG_LIB= -lpng -ljpeg
 else
 	OPENGL_INC= -I/usr/X11R6/include
 	OPENGL_LIB= -I/usr/lib64 -lGL -lGLU
 	SDL_INC= `sdl2-config --cflags`
 	SDL_LIB= `sdl2-config --libs` -lSDL2_image
-	PNG_INC= -I/usr/local/include
-	PNG_LIB= -lpng
+	IMG_INC= -I/usr/local/include
+	IMG_LIB= -lpng -ljpeg
 endif
 
 # object files have corresponding source files
@@ -22,8 +22,8 @@ OBJDIR= objs
 OBJS= $(addprefix $(OBJDIR)/, main.o cube2equirect.o)
 CXX= g++
 COMPILER_FLAGS= -g
-INCLUDE= $(SDL_INC) $(PNG_INC) $(OPENGL_INC) 
-LIBS= $(SDL_LIB) $(PNG_LIB) $(OPENGL_LIB)
+INCLUDE= $(SDL_INC) $(IMG_INC) $(OPENGL_INC) 
+LIBS= $(SDL_LIB) $(IMG_LIB) $(OPENGL_LIB)
 
 EXEC= cube2equirect
 

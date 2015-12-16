@@ -20,7 +20,7 @@ void cube2equirect::initGL(string inDir, string outDir, int outRes) {
 		equirectDir += "/";
 	equirectW = outRes;
 	equirectH = equirectW / 2;
-	equirectPixels = (GLubyte*)malloc(4*equirectW*equirectH*sizeof(GLubyte));
+	equirectPixels = (GLubyte*)malloc(3*equirectW*equirectH*sizeof(GLubyte));
 
 	glViewport(0, 0, equirectW, equirectH);
 
@@ -71,12 +71,16 @@ void cube2equirect::render() {
 
 
 	// read rendered image into pixel buffer
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glBindTexture(GL_TEXTURE_2D, equirectTexture);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, equirectPixels);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, equirectPixels);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// save pixel buffer as image
-	saveImagePNG(equirectDir + "equirect_" + frameIdx + ".png", equirectPixels, equirectW, equirectH);
+	if (outExt == "jpg")
+		saveImageJPEG(equirectDir + "equirect_" + frameIdx + ".jpg", equirectPixels, equirectW, equirectH);
+	else
+		saveImagePNG(equirectDir + "equirect_" + frameIdx + ".png", equirectPixels, equirectW, equirectH);
 
 
 	frameCount++;
@@ -161,9 +165,11 @@ void cube2equirect::initCubeTextures() {
 	struct stat info;
 	if (stat((cubemapDir + "000000_left.jpg").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
 		imgExt = "jpg";
+		outExt = "jpg";
 	}
 	else if (stat((cubemapDir + "000000_left.png").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
 		imgExt = "png";
+		outExt = "png";
 	}
 	else {
 		printf("cubemap images not found in directory \"%s\"\n", cubemapDir.c_str());
@@ -279,6 +285,7 @@ void cube2equirect::loadImage(string filename, GLuint texture, bool firstTime) {
 
     GLenum format = surface->format->BitsPerPixel == 32 ? GL_RGBA : GL_RGB;
 
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
     glBindTexture(GL_TEXTURE_2D, texture);
 
     if (firstTime) {
@@ -292,6 +299,39 @@ void cube2equirect::loadImage(string filename, GLuint texture, bool firstTime) {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     SDL_FreeSurface(surface);
+}
+
+bool cube2equirect::saveImageJPEG(string filename, GLubyte *pixels, int width, int height) {
+    FILE *fp = fopen(filename.c_str(), "wb");
+    if (!fp) {
+        return false;
+    }
+
+	struct jpeg_compress_struct cinfo;
+	struct jpeg_error_mgr       jerr;
+	 
+	cinfo.err = jpeg_std_error(&jerr);
+	jpeg_create_compress(&cinfo);
+	jpeg_stdio_dest(&cinfo, fp);
+	 
+	cinfo.image_width      = width;
+	cinfo.image_height     = height;
+	cinfo.input_components = 3;
+	cinfo.in_color_space   = JCS_RGB;
+
+	jpeg_set_defaults(&cinfo);
+	jpeg_set_quality (&cinfo, 85, true); // quality [0..100]
+	jpeg_start_compress(&cinfo, true);
+
+	JSAMPROW row_pointer; // pointer to a single row
+	while (cinfo.next_scanline < cinfo.image_height) {
+		row_pointer = (JSAMPROW)(pixels + cinfo.next_scanline * width * 3);
+		jpeg_write_scanlines(&cinfo, &row_pointer, 1);
+	}
+	jpeg_finish_compress(&cinfo);
+	
+	fclose(fp);
+	return true;
 }
 
 bool cube2equirect::saveImagePNG(string filename, GLubyte *pixels, int width, int height) {
@@ -312,7 +352,7 @@ bool cube2equirect::saveImagePNG(string filename, GLubyte *pixels, int width, in
     }
 
     png_init_io(png, fp);
-    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
     png_colorp palette = (png_colorp)png_malloc(png, PNG_MAX_PALETTE_LENGTH * sizeof(png_color));
     if (!palette) {
         fclose(fp);
@@ -325,7 +365,7 @@ bool cube2equirect::saveImagePNG(string filename, GLubyte *pixels, int width, in
 
     png_bytepp rows = (png_bytepp)png_malloc(png, height * sizeof(png_bytep));
     for (int i=0; i<height; i++) {
-        rows[i] = (png_bytep)(pixels + i * width * 4);
+        rows[i] = (png_bytep)(pixels + i * width * 3);
     }
 
     png_write_image(png, rows);

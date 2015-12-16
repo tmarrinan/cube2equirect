@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <SDL.h>
 #include <SDL_image.h>
+#include <jpeglib.h>
 #include <png.h>
 
 #ifdef __APPLE__
@@ -46,6 +47,7 @@ private:
 	std::string cubemapDir;
 	std::string equirectDir;
 	std::string imgExt;
+	std::string outExt;
 
 	GLint equirectW;
 	GLint equirectH;
@@ -65,6 +67,7 @@ public:
 	void createShaderProgram(std::string name, GLint vertexShader, GLint fragmentShader);
 	std::string readFile(std::string filename);
 	void loadImage(std::string filename, GLuint texture, bool firstTime);
+	bool saveImageJPEG(std::string filename, GLubyte *pixels, int width, int height);
 	bool saveImagePNG(std::string filename, GLubyte *pixels, int width, int height);
 };
 
