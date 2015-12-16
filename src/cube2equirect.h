@@ -45,6 +45,7 @@ private:
 	char frameIdx[7];
 	std::string cubemapDir;
 	std::string equirectDir;
+	std::string imgExt;
 
 	GLint equirectW;
 	GLint equirectH;

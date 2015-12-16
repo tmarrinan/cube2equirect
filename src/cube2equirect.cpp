@@ -85,7 +85,7 @@ void cube2equirect::render() {
 }
 
 bool cube2equirect::hasMoreFrames() {
-	string nextImage = cubemapDir + frameIdx + "_left.jpg";
+	string nextImage = cubemapDir + frameIdx + "_left." + imgExt;
 
 	struct stat info;
 	if (stat(nextImage.c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
@@ -158,21 +158,34 @@ void cube2equirect::initRenderToTexture() {
 void cube2equirect::initCubeTextures() {
 	glGenTextures(6, cubeTextures);
 
-	loadImage(cubemapDir + "000000_left.jpg",   cubeTextures[0], true);
-	loadImage(cubemapDir + "000000_right.jpg",  cubeTextures[1], true);
-	loadImage(cubemapDir + "000000_bottom.jpg", cubeTextures[2], true);
-	loadImage(cubemapDir + "000000_top.jpg",    cubeTextures[3], true);
-	loadImage(cubemapDir + "000000_back.jpg",   cubeTextures[4], true);
-	loadImage(cubemapDir + "000000_front.jpg",  cubeTextures[5], true);
+	struct stat info;
+	if (stat((cubemapDir + "000000_left.jpg").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
+		imgExt = "jpg";
+	}
+	else if (stat((cubemapDir + "000000_left.png").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
+		imgExt = "png";
+	}
+	else {
+		printf("cubemap images not found in directory \"%s\"\n", cubemapDir.c_str());
+		SDL_Quit();
+		exit(0);
+	}
+
+	loadImage(cubemapDir + "000000_left."   + imgExt, cubeTextures[0], true);
+	loadImage(cubemapDir + "000000_right."  + imgExt, cubeTextures[1], true);
+	loadImage(cubemapDir + "000000_bottom." + imgExt, cubeTextures[2], true);
+	loadImage(cubemapDir + "000000_top."    + imgExt, cubeTextures[3], true);
+	loadImage(cubemapDir + "000000_back."   + imgExt, cubeTextures[4], true);
+	loadImage(cubemapDir + "000000_front."  + imgExt, cubeTextures[5], true);
 }
 
 void cube2equirect::updateCubeTextures() {
-	loadImage(cubemapDir + frameIdx + "_left.jpg",   cubeTextures[0], false);
-	loadImage(cubemapDir + frameIdx + "_right.jpg",  cubeTextures[1], false);
-	loadImage(cubemapDir + frameIdx + "_bottom.jpg", cubeTextures[2], false);
-	loadImage(cubemapDir + frameIdx + "_top.jpg",    cubeTextures[3], false);
-	loadImage(cubemapDir + frameIdx + "_back.jpg",   cubeTextures[4], false);
-	loadImage(cubemapDir + frameIdx + "_front.jpg",  cubeTextures[5], false);
+	loadImage(cubemapDir + frameIdx + "_left."   + imgExt, cubeTextures[0], false);
+	loadImage(cubemapDir + frameIdx + "_right."  + imgExt, cubeTextures[1], false);
+	loadImage(cubemapDir + frameIdx + "_bottom." + imgExt, cubeTextures[2], false);
+	loadImage(cubemapDir + frameIdx + "_top."    + imgExt, cubeTextures[3], false);
+	loadImage(cubemapDir + frameIdx + "_back."   + imgExt, cubeTextures[4], false);
+	loadImage(cubemapDir + frameIdx + "_front."  + imgExt, cubeTextures[5], false);
 }
 
 void cube2equirect::initShaders(std::string name) {
