@@ -308,7 +308,7 @@ bool cube2equirect::saveImageJPEG(string filename, GLubyte *pixels, int width, i
     }
 
 	struct jpeg_compress_struct cinfo;
-	struct jpeg_error_mgr       jerr;
+	struct jpeg_error_mgr jerr;
 	 
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
@@ -374,6 +374,6 @@ bool cube2equirect::saveImagePNG(string filename, GLubyte *pixels, int width, in
     png_destroy_write_struct(&png, &info);
 
     fclose(fp);
-    delete[] rows;
+    png_free(png, rows);
     return true;
 }
