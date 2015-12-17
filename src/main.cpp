@@ -15,8 +15,9 @@ SDL_Window *mainwindow;         // Window handle
 SDL_GLContext maincontext;      // OpenGL context handle
 cube2equirect *renderer;        // Renderer
 
-void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution, string *format);
+void parseArguments(int argc, char **argv, string *exe, string *inputDir, string *outputDir, int *resolution, string *format);
 void idle();
+string getExecutablePath(string exe);
 void SDL_Die(const char *msg);
 void SDL_MainLoop();
 
@@ -39,7 +40,8 @@ int main(int argc, char **argv) {
 	string equirectDataDir;
 	int hResolution;
 	string outFormat;
-	parseArguments(argc, argv, &cubeDataDir, &equirectDataDir, &hResolution, &outFormat);
+	string exePath;
+	parseArguments(argc, argv, &exePath, &cubeDataDir, &equirectDataDir, &hResolution, &outFormat);
 
 	struct stat info;
 	if (stat(cubeDataDir.c_str(), &info) != 0) {
@@ -80,7 +82,7 @@ int main(int argc, char **argv) {
 	const unsigned char* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
 	printf("Using OpenGL %s, GLSL %s\n", glVersion, glslVersion);
 
-	renderer = new cube2equirect(mainwindow);
+	renderer = new cube2equirect(mainwindow, exePath);
 	renderer->initGL(cubeDataDir, equirectDataDir, hResolution, outFormat);
 	renderer->render();
 	idle();
@@ -91,8 +93,9 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution, string *format) {
-	*outputDir = "output/";
+void parseArguments(int argc, char **argv, string *exe, string *inputDir, string *outputDir, int *resolution, string *format) {
+	*exe = getExecutablePath(argv[0]);
+	*outputDir = *exe + "output/";
 	*resolution = 3840;
 	*format = "";
 	bool hasInput = false;
@@ -182,6 +185,11 @@ void idle() {
 	event.user = userevent;
 
 	SDL_PushEvent(&event);
+}
+
+string getExecutablePath(string exe) {
+	int sep = exe.rfind('/');
+	return exe.substr(0, sep+1);
 }
 
 void SDL_Die(const char *msg) {

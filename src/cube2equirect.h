@@ -48,13 +48,14 @@ private:
 	std::string equirectDir;
 	std::string imgExt;
 	std::string outExt;
+	std::string exePath;
 
 	GLint equirectW;
 	GLint equirectH;
 	GLubyte *equirectPixels;
 
 public:
-	cube2equirect(SDL_Window *win);
+	cube2equirect(SDL_Window *win, std::string exe);
 	void initGL(std::string inDir, std::string outDir, int outRes, std::string outFmt);
 	void render();
 	bool hasMoreFrames();

@@ -2,8 +2,9 @@
 
 using namespace std;
 
-cube2equirect::cube2equirect(SDL_Window *win) {
+cube2equirect::cube2equirect(SDL_Window *win, string exe) {
 	mainwindow = win;
+	exePath = exe;
 
 	frameCount = 0;
 	sprintf(frameIdx, "%06d", frameCount);
@@ -196,10 +197,10 @@ void cube2equirect::updateCubeTextures() {
 }
 
 void cube2equirect::initShaders(std::string name) {
-	string vertSource = readFile("shaders/" + name + ".vert");
+	string vertSource = readFile(exePath + "shaders/" + name + ".vert");
 	GLint vertexShader = compileShader(vertSource, GL_VERTEX_SHADER);
 
-	string fragSource = readFile("shaders/" + name + ".frag");
+	string fragSource = readFile(exePath + "shaders/" + name + ".frag");
 	GLint fragmentShader = compileShader(fragSource, GL_FRAGMENT_SHADER);
 	
 	createShaderProgram(name, vertexShader, fragmentShader);
