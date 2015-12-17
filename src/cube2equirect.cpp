@@ -324,7 +324,7 @@ bool cube2equirect::saveImageJPEG(string filename, GLubyte *pixels, int width, i
 	jpeg_set_quality (&cinfo, 85, true); // quality [0..100]
 	jpeg_start_compress(&cinfo, true);
 
-	JSAMPROW row_pointer; // pointer to a single row
+	JSAMPROW row_pointer;
 	while (cinfo.next_scanline < cinfo.image_height) {
 		row_pointer = (JSAMPROW)(pixels + cinfo.next_scanline * width * 3);
 		jpeg_write_scanlines(&cinfo, &row_pointer, 1);

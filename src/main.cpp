@@ -106,7 +106,8 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 			*outputDir = argv[2];
 		}
 		else if (strcmp(argv[1], "-r") == 0 || strcmp(argv[1], "--resolution-h") == 0) {
-			*resolution = atoi(argv[2]);
+			int res = atoi(argv[2]);
+			if (res > 1) *resolution = res;
 		}
 		else if (strcmp(argv[1], "-f") == 0 || strcmp(argv[1], "--format") == 0) {
 			*format = argv[2];
@@ -121,7 +122,8 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 			*outputDir = argv[4];
 		}
 		else if (strcmp(argv[3], "-r") == 0 || strcmp(argv[3], "--resolution-h") == 0) {
-			*resolution = atoi(argv[4]);
+			int res = atoi(argv[4]);
+			if (res > 1) *resolution = res;
 		}
 		else if (strcmp(argv[3], "-f") == 0 || strcmp(argv[3], "--format") == 0) {
 			*format = argv[4];
@@ -136,7 +138,8 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 			*outputDir = argv[6];
 		}
 		else if (strcmp(argv[5], "-r") == 0 || strcmp(argv[5], "--resolution-h") == 0) {
-			*resolution = atoi(argv[6]);
+			int res = atoi(argv[6]);
+			if (res > 1) *resolution = res;
 		}
 		else if (strcmp(argv[5], "-f") == 0 || strcmp(argv[5], "--format") == 0) {
 			*format = argv[6];
@@ -151,7 +154,8 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 			*outputDir = argv[8];
 		}
 		else if (strcmp(argv[7], "-r") == 0 || strcmp(argv[7], "--resolution-h") == 0) {
-			*resolution = atoi(argv[8]);
+			int res = atoi(argv[8]);
+			if (res > 1) *resolution = res;
 		}
 		else if (strcmp(argv[7], "-f") == 0 || strcmp(argv[7], "--format") == 0) {
 			*format = argv[8];
