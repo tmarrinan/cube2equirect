@@ -34,6 +34,8 @@ Converts cubemap data sets to an equirectuangular projection image
 
 * `brew install sdl2`
 * `brew install sdl2_image`
+* `brew install jpeg`
+* `brew install libpng`
 
 ## Build ##
 
