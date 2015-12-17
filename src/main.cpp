@@ -15,7 +15,7 @@ SDL_Window *mainwindow;         // Window handle
 SDL_GLContext maincontext;      // OpenGL context handle
 cube2equirect *renderer;        // Renderer
 
-void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution);
+void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution, string *format);
 void idle();
 void SDL_Die(const char *msg);
 void SDL_MainLoop();
@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
 		printf("    -i, --input <DIRECTORY>      directory with cubemap image set sequence\n");
 		printf("    -o, --output <DIRECTORY>     directory to save equirectangular images [Default: \'output/\']\n");
 		printf("    -r, --resolution-h <NUMBER>  horizontal resolution of output images [Default: 3840]\n");
+		printf("    -f, --format <IMG_FORMAT>    output image format (\'jpg\' or \'png\' [Default: same as input]\n");
 		printf("\n");
 		return 0;
 	}
@@ -37,7 +38,8 @@ int main(int argc, char **argv) {
 	string cubeDataDir;
 	string equirectDataDir;
 	int hResolution;
-	parseArguments(argc, argv, &cubeDataDir, &equirectDataDir, &hResolution);
+	string outFormat;
+	parseArguments(argc, argv, &cubeDataDir, &equirectDataDir, &hResolution, &outFormat);
 
 	struct stat info;
 	if (stat(cubeDataDir.c_str(), &info) != 0) {
@@ -79,7 +81,7 @@ int main(int argc, char **argv) {
 	printf("Using OpenGL %s, GLSL %s\n", glVersion, glslVersion);
 
 	renderer = new cube2equirect(mainwindow);
-	renderer->initGL(cubeDataDir, equirectDataDir, hResolution);
+	renderer->initGL(cubeDataDir, equirectDataDir, hResolution, outFormat);
 	renderer->render();
 	idle();
 
@@ -89,9 +91,10 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution) {
+void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, int *resolution, string *format) {
 	*outputDir = "output/";
 	*resolution = 3840;
+	*format = "";
 	bool hasInput = false;
 
 	if (argc >= 3) {
@@ -105,6 +108,9 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 		else if (strcmp(argv[1], "-r") == 0 || strcmp(argv[1], "--resolution-h") == 0) {
 			*resolution = atoi(argv[2]);
 		}
+		else if (strcmp(argv[1], "-f") == 0 || strcmp(argv[1], "--format") == 0) {
+			*format = argv[2];
+		}
 	}
 	if (argc >= 5) {
 		if (strcmp(argv[3], "-i") == 0 || strcmp(argv[3], "--input") == 0) {
@@ -117,6 +123,9 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 		else if (strcmp(argv[3], "-r") == 0 || strcmp(argv[3], "--resolution-h") == 0) {
 			*resolution = atoi(argv[4]);
 		}
+		else if (strcmp(argv[3], "-f") == 0 || strcmp(argv[3], "--format") == 0) {
+			*format = argv[4];
+		}
 	}
 	if (argc >= 7) {
 		if (strcmp(argv[5], "-i") == 0 || strcmp(argv[5], "--input") == 0) {
@@ -128,6 +137,24 @@ void parseArguments(int argc, char **argv, string *inputDir, string *outputDir, 
 		}
 		else if (strcmp(argv[5], "-r") == 0 || strcmp(argv[5], "--resolution-h") == 0) {
 			*resolution = atoi(argv[6]);
+		}
+		else if (strcmp(argv[5], "-f") == 0 || strcmp(argv[5], "--format") == 0) {
+			*format = argv[6];
+		}
+	}
+	if (argc >= 9) {
+		if (strcmp(argv[7], "-i") == 0 || strcmp(argv[7], "--input") == 0) {
+			*inputDir = argv[8];
+			hasInput = true;
+		}
+		else if (strcmp(argv[7], "-o") == 0 || strcmp(argv[7], "--output") == 0) {
+			*outputDir = argv[8];
+		}
+		else if (strcmp(argv[7], "-r") == 0 || strcmp(argv[7], "--resolution-h") == 0) {
+			*resolution = atoi(argv[8]);
+		}
+		else if (strcmp(argv[7], "-f") == 0 || strcmp(argv[7], "--format") == 0) {
+			*format = argv[8];
 		}
 	}
 

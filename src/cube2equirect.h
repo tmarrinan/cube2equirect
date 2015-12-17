@@ -55,7 +55,7 @@ private:
 
 public:
 	cube2equirect(SDL_Window *win);
-	void initGL(std::string inDir, std::string outDir, int outRes);
+	void initGL(std::string inDir, std::string outDir, int outRes, std::string outFmt);
 	void render();
 	bool hasMoreFrames();
 	void initBuffers();

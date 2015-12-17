@@ -9,7 +9,7 @@ cube2equirect::cube2equirect(SDL_Window *win) {
 	sprintf(frameIdx, "%06d", frameCount);
 }
 
-void cube2equirect::initGL(string inDir, string outDir, int outRes) {
+void cube2equirect::initGL(string inDir, string outDir, int outRes, string outFmt) {
 	SDL_GL_SetSwapInterval(1);
 
 	cubemapDir = inDir;
@@ -21,6 +21,7 @@ void cube2equirect::initGL(string inDir, string outDir, int outRes) {
 	equirectW = outRes;
 	equirectH = equirectW / 2;
 	equirectPixels = (GLubyte*)malloc(3*equirectW*equirectH*sizeof(GLubyte));
+	outExt = outFmt;
 
 	glViewport(0, 0, equirectW, equirectH);
 
@@ -165,11 +166,11 @@ void cube2equirect::initCubeTextures() {
 	struct stat info;
 	if (stat((cubemapDir + "000000_left.jpg").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
 		imgExt = "jpg";
-		outExt = "jpg";
+		if (outExt != "jpg" && outExt != "png") outExt = "jpg";
 	}
 	else if (stat((cubemapDir + "000000_left.png").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
 		imgExt = "png";
-		outExt = "png";
+		if (outExt != "jpg" && outExt != "png") outExt = "png";
 	}
 	else {
 		printf("cubemap images not found in directory \"%s\"\n", cubemapDir.c_str());
