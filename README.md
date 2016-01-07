@@ -17,8 +17,9 @@ Converts cubemap data sets to an equirectuangular projection image
     * options:
         * `-i, --input <DIRECTORY>` directory with cubemap image set sequence
         * `-o, --output <DIRECTORY>` directory to save equirectangular images [Default: 'output/']
-        * `-r, --resolution-h <NUMBER>` horizontal resolution of output images [Default: 3840]
-        * `-f, --format <IMG_FORMAT>` output image format ('jpg' or 'png' [Default: same as input]
+        * `-h, --h-resolution <NUMBER>` horizontal resolution of output images [Default: 3840]
+        * `-f, --format <IMG_FORMAT>` output image format ('jpg', 'png', or 'mp4') [Default: same as input]
+        * `-r, --framerate <NUMBER>` number of images per second (for video output) [Default: 24]
     * cubemap files should be named (JPEG and PNG are both valid):
         * 000000_left.jpg
         * 000000_right.jpg
@@ -36,6 +37,7 @@ Converts cubemap data sets to an equirectuangular projection image
 * `brew install sdl2_image`
 * `brew install jpeg`
 * `brew install libpng`
+* `brew install ffmpeg` (optional - only needed if converting sequences of images to a video)
 
 ## Build ##
 
