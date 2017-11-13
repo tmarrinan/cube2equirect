@@ -148,8 +148,8 @@ void cube2equirect::initRenderToTexture() {
 
     glGenTextures(1, &equirectTexture);
     glBindTexture(GL_TEXTURE_2D, equirectTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -291,8 +291,8 @@ void cube2equirect::loadImage(string filename, GLuint texture, bool firstTime) {
     glBindTexture(GL_TEXTURE_2D, texture);
 
     if (firstTime) {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
@@ -322,8 +322,8 @@ bool cube2equirect::saveImageJPEG(string filename, GLubyte *pixels, int width, i
     cinfo.in_color_space   = JCS_RGB;
 
     jpeg_set_defaults(&cinfo);
-    jpeg_set_quality (&cinfo, 85, true); // quality [0..100]
-    jpeg_start_compress(&cinfo, true);
+    jpeg_set_quality (&cinfo, 85, TRUE); // quality [0..100]
+    jpeg_start_compress(&cinfo, TRUE);
 
     JSAMPROW row_pointer;
     while (cinfo.next_scanline < cinfo.image_height) {
