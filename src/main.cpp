@@ -1,31 +1,33 @@
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <sys/stat.h>
-#include <SDL.h>
+#ifdef __linux__
+#define MESA_EGL_NO_X11_HEADERS
+#endif
+#include "glad/glad_egl.h"
+#include <EGL/egl.h>
+#include <GL/gl.h>
 
-#include "cube2equirect.h"
-
-#define PROGRAM_NAME "Cube2Equirect"
-
-using namespace std;
+//#include "cube2equirect.h"
 
 
-SDL_Window *mainwindow;         // Window handle
-SDL_GLContext maincontext;      // OpenGL context handle
-cube2equirect *renderer;        // Renderer
-string cubeDataDir;             // Input data directory
-string equirectDataDir;         // Output data directory
-int hResolution;                // Output horizontal resolution
-string outFormat;               // Output file format
-int videoFrameRate;             // Output video images per second
-string exePath;                 // Executable path
+typedef struct AppData {
+    std::string exe_path;           // executable path
+    std::string cube_data_dir;      // input image data directory
+    std::string equirect_data_dir;  // output image/video data directory
+    int width;                      // output image/video width
+    int height;                     // output image/video height
+    std::string out_format;         // output file format
+    int video_framerate;            // output video frame rate
+    EGLDisplay egl_display;         // EGL display
+    EGLSurface egl_surface;         // EGL surface
+} AppData;
 
-void parseArguments(int argc, char **argv, string *exe, string *inputDir, string *outputDir, int *resolution, string *format, int *framerate);
-void idle();
-string getExecutablePath(string exe);
-void SDL_Die(const char *msg);
-void SDL_MainLoop();
+
+void parseArguments(int argc, char **argv, AppData *app_ptr);
+std::string getExecutablePath(std::string exe);
 
 int main(int argc, char **argv) {
     if (argc < 3) {
@@ -43,254 +45,133 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    parseArguments(argc, argv, &exePath, &cubeDataDir, &equirectDataDir, &hResolution, &outFormat, &videoFrameRate);
+    AppData app;
+    parseArguments(argc, argv, &app);
 
     struct stat info;
-    if (stat(cubeDataDir.c_str(), &info) != 0) {
-        printf("\"%s\" does not exist or cannot be accessed, please specify directory with cubemap images\n", cubeDataDir.c_str());
-        return 0;
+    if (stat(app.cube_data_dir.c_str(), &info) != 0) {
+        fprintf(stderr, "\"%s\" does not exist or cannot be accessed, please specify directory with cubemap images\n", app.cube_data_dir.c_str());
+        return EXIT_FAILURE;
     }
     else if (!(info.st_mode & S_IFDIR)) {
-        printf("\"%s\" is not a directory, please specify directory with cubemap images\n", cubeDataDir.c_str());
-        return 0;
+        fprintf(stderr, "\"%s\" is not a directory, please specify directory with cubemap images\n", app.cube_data_dir.c_str());
+        return EXIT_FAILURE;
     }
 
 
-    // Initialize SDL's video subsystem (or die on error)
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        SDL_Die("Unable to initialize SDL");
+    // Initialize EGL
+    app.egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    EGLint egl_major, egl_minor;
+    eglInitialize(app.egl_display, &egl_major, &egl_minor);
 
     // Initialize GL attributes
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    EGLint num_configs;
+    EGLConfig egl_config;
+    static const EGLint config_attribs[] = {
+        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, 8,
+        EGL_DEPTH_SIZE, 24,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+        EGL_NONE
+    };
+    eglChooseConfig(app.egl_display, config_attribs, &egl_config, 1, &num_configs);
 
-    // Declare minimum OpenGL version - 3.2
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE); 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    // Create EGL surface
+    static const EGLint pbuffer_attribs[] = {
+        EGL_WIDTH, app.width,
+        EGL_HEIGHT, app.height,
+        EGL_NONE
+    };
+    app.egl_surface = eglCreatePbufferSurface(app.egl_display, egl_config, pbuffer_attribs);
 
-    // Create our window centered at initial resolution
-    mainwindow = SDL_CreateWindow(PROGRAM_NAME, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 256, 128, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-    if (!mainwindow)
-        SDL_Die("Unable to create window");
+    // Bind API
+    eglBindAPI(EGL_OPENGL_API);
 
-    maincontext = SDL_GL_CreateContext(mainwindow);
+    // Create OpenGL context and make it current
+    static const EGLint context_attribs[] = {
+        EGL_CONTEXT_MAJOR_VERSION, 3,
+        EGL_CONTEXT_MINOR_VERSION, 3,
+        EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT,
+        EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE, EGL_TRUE,
+        EGL_NONE
+    };
+    EGLContext egl_ctx = eglCreateContext(app.egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
+    eglMakeCurrent(app.egl_display, app.egl_surface, app.egl_surface, egl_ctx);
 
-    const unsigned char* glVersion = glGetString(GL_VERSION);
-    const unsigned char* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-    printf("Using OpenGL %s, GLSL %s\n", glVersion, glslVersion);
+    // Initialize GLAD (OpenGL Extenstions)
+    if (!gladLoadEGLLoader((GLADloadproc)eglGetProcAddress)) {
+        fprintf(stderr, "Error: could not initialize GLAD EGL\n");
+        return EXIT_FAILURE;
+    }
 
-    string imgFormat = outFormat == "mp4" ? "jpg" : outFormat;
+    const unsigned char* gl_version = glGetString(GL_VERSION);
+    const unsigned char* glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
+    printf("Using OpenGL %s, GLSL %s\n", gl_version, glsl_version);
 
-    renderer = new cube2equirect(mainwindow, exePath);
-    renderer->initGL(cubeDataDir, equirectDataDir, hResolution, imgFormat);
-    renderer->render();
-    idle();
 
-    SDL_MainLoop();
-    //SDL_Quit();
+    // Clean up
+    eglTerminate(app.egl_display);
 
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
-void parseArguments(int argc, char **argv, string *exe, string *inputDir, string *outputDir, int *resolution, string *format, int *framerate) {
-    *exe = getExecutablePath(argv[0]);
-    *outputDir = *exe + "output/";
-    *resolution = 3840;
-    *format = "";
-    *framerate = 24;
-    bool hasInput = false;
+void parseArguments(int argc, char **argv, AppData *app_ptr) {
+    app_ptr->exe_path = getExecutablePath(argv[0]);
+    app_ptr->equirect_data_dir = app_ptr->exe_path + "output/";
+    app_ptr->width = 3840;
+    app_ptr->height = app_ptr->width / 2;
+    app_ptr->out_format = "";
+    app_ptr->video_framerate = 24;
+    bool has_input = false;
 
-    if (argc >= 3) {
-        if (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "--input") == 0) {
-            *inputDir = argv[2];
-            hasInput = true;
+    int arg_idx = 1;
+    while (argc > (arg_idx + 1))
+    {
+        if (strcmp(argv[arg_idx], "-i") == 0 || strcmp(argv[arg_idx], "--input") == 0)
+        {
+            app_ptr->cube_data_dir = argv[arg_idx + 1];    
+            has_input = true;
         }
-        else if (strcmp(argv[1], "-o") == 0 || strcmp(argv[1], "--output") == 0) {
-            *outputDir = argv[2];
+        else if (strcmp(argv[arg_idx], "-o") == 0 || strcmp(argv[arg_idx], "--output") == 0)
+        {
+            app_ptr->equirect_data_dir = argv[arg_idx + 1];
         }
-        else if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--h-resolution") == 0) {
-            int res = atoi(argv[2]);
-            if (res > 1) *resolution = res;
+        else if (strcmp(argv[arg_idx], "-h") == 0 || strcmp(argv[arg_idx], "--h-resolution") == 0)
+        {
+            int res = atoi(argv[arg_idx + 1]);
+            if (res > 1)
+            {
+                app_ptr->width = res;
+                app_ptr->height = res / 2;
+            }
         }
-        else if (strcmp(argv[1], "-f") == 0 || strcmp(argv[1], "--format") == 0) {
-            *format = argv[2];
+        else if (strcmp(argv[arg_idx], "-f") == 0 || strcmp(argv[arg_idx], "--format") == 0)
+        {
+            app_ptr->out_format = argv[arg_idx + 1];
         }
-        else if (strcmp(argv[1], "-r") == 0 || strcmp(argv[1], "--framerate") == 0) {
-            int fr = atoi(argv[2]);
-            if (fr > 1) *framerate = fr;
+        else if (strcmp(argv[arg_idx], "-r") == 0 || strcmp(argv[arg_idx], "--framerate") == 0)
+        {
+            int fr = atoi(argv[arg_idx + 1]);
+            if (fr > 0)
+            {
+                app_ptr->video_framerate = fr;
+            }
         }
-    }
-    if (argc >= 5) {
-        if (strcmp(argv[3], "-i") == 0 || strcmp(argv[3], "--input") == 0) {
-            *inputDir = argv[4];
-            hasInput = true;
-        }
-        else if (strcmp(argv[3], "-o") == 0 || strcmp(argv[3], "--output") == 0) {
-            *outputDir = argv[4];
-        }
-        else if (strcmp(argv[3], "-h") == 0 || strcmp(argv[3], "--h-resolution") == 0) {
-            int res = atoi(argv[4]);
-            if (res > 1) *resolution = res;
-        }
-        else if (strcmp(argv[3], "-f") == 0 || strcmp(argv[3], "--format") == 0) {
-            *format = argv[4];
-        }
-        else if (strcmp(argv[3], "-r") == 0 || strcmp(argv[3], "--framerate") == 0) {
-            int fr = atoi(argv[4]);
-            if (fr > 1) *framerate = fr;
-        }
-    }
-    if (argc >= 7) {
-        if (strcmp(argv[5], "-i") == 0 || strcmp(argv[5], "--input") == 0) {
-            *inputDir = argv[6];
-            hasInput = true;
-        }
-        else if (strcmp(argv[5], "-o") == 0 || strcmp(argv[5], "--output") == 0) {
-            *outputDir = argv[6];
-        }
-        else if (strcmp(argv[5], "-h") == 0 || strcmp(argv[5], "--h-resolution") == 0) {
-            int res = atoi(argv[6]);
-            if (res > 1) *resolution = res;
-        }
-        else if (strcmp(argv[5], "-f") == 0 || strcmp(argv[5], "--format") == 0) {
-            *format = argv[6];
-        }
-        else if (strcmp(argv[5], "-r") == 0 || strcmp(argv[5], "--framerate") == 0) {
-            int fr = atoi(argv[6]);
-            if (fr > 1) *framerate = fr;
-        }
-    }
-    if (argc >= 9) {
-        if (strcmp(argv[7], "-i") == 0 || strcmp(argv[7], "--input") == 0) {
-            *inputDir = argv[8];
-            hasInput = true;
-        }
-        else if (strcmp(argv[7], "-o") == 0 || strcmp(argv[7], "--output") == 0) {
-            *outputDir = argv[8];
-        }
-        else if (strcmp(argv[7], "-h") == 0 || strcmp(argv[7], "--h-resolution") == 0) {
-            int res = atoi(argv[8]);
-            if (res > 1) *resolution = res;
-        }
-        else if (strcmp(argv[7], "-f") == 0 || strcmp(argv[7], "--format") == 0) {
-            *format = argv[8];
-        }
-        else if (strcmp(argv[7], "-r") == 0 || strcmp(argv[7], "--framerate") == 0) {
-            int fr = atoi(argv[8]);
-            if (fr > 1) *framerate = fr;
-        }
-    }
-    if (argc >= 11) {
-        if (strcmp(argv[9], "-i") == 0 || strcmp(argv[9], "--input") == 0) {
-            *inputDir = argv[10];
-            hasInput = true;
-        }
-        else if (strcmp(argv[9], "-o") == 0 || strcmp(argv[9], "--output") == 0) {
-            *outputDir = argv[10];
-        }
-        else if (strcmp(argv[9], "-h") == 0 || strcmp(argv[9], "--h-resolution") == 0) {
-            int res = atoi(argv[10]);
-            if (res > 1) *resolution = res;
-        }
-        else if (strcmp(argv[9], "-f") == 0 || strcmp(argv[9], "--format") == 0) {
-            *format = argv[10];
-        }
-        else if (strcmp(argv[9], "-r") == 0 || strcmp(argv[9], "--framerate") == 0) {
-            int fr = atoi(argv[10]);
-            if (fr > 1) *framerate = fr;
-        }
+        arg_idx += 2;
     }
 
-    if (!hasInput) {
-        printf("please specify an input directory with cubemap images\n");
-        SDL_Quit();
-        exit(0);
+    if (!has_input) {
+        fprintf(stderr, "please specify an input directory with cubemap images\n");
+        exit(EXIT_FAILURE);
     }
 }
 
-void idle() {
-    SDL_Event event;
-    SDL_UserEvent userevent;
-
-    userevent.type = SDL_USEREVENT;
-    userevent.code = 0;
-    userevent.data1 = NULL;
-    userevent.data2 = NULL;
-
-    event.type = SDL_USEREVENT;
-    event.user = userevent;
-
-    SDL_PushEvent(&event);
-}
-
-string getExecutablePath(string exe) {
+std::string getExecutablePath(std::string exe) {
     int sep = exe.rfind('/');
     return exe.substr(0, sep+1);
 }
 
-void finishAndQuit() {
-    if (outFormat == "mp4") {
-        char ffCmd[512];
-        int outFrameRate = videoFrameRate < 24 ? 24 : videoFrameRate;
-#ifdef _WIN32
-        string oNull = "NUL";
-#else
-        string oNull = "/dev/null";
-#endif
-        sprintf(ffCmd, "ffmpeg -y -start_number 0 -r %d -i \"%sequirect_%%06d.jpg\" -r %d -c:v libx264 -pix_fmt yuv420p \"%sequirect.mp4\" > %s 2>&1", videoFrameRate, equirectDataDir.c_str(), outFrameRate, equirectDataDir.c_str(), oNull.c_str());
-        int e = system(ffCmd);
-        if (e != 0) {
-            printf("command:\n\n%s\n\ndid not execute successfully (exit code %d).\n", ffCmd, e);
-            printf("jpeg image sequence saved instead.\n");
-        }
-        else {
-            int i = 0;
-            char imgFile[256];
-            do {
-                sprintf(imgFile, "%sequirect_%06d.jpg", equirectDataDir.c_str(), i);
-                i++;
-            } while (remove(imgFile) == 0);
-        }
-    }
-
-    SDL_Quit();
-    exit(0);
-}
-
-void SDL_Die(const char *msg) {
-    printf("%s: %s\n", msg, SDL_GetError());
-    SDL_Quit();
-    exit(1);
-}
-
-void SDL_MainLoop() {
-    SDL_Event event;
-    while (true) {
-        SDL_WaitEvent(&event);
-        do {
-            switch (event.type) {
-                case SDL_USEREVENT:
-                    if (renderer->hasMoreFrames()) {
-                        renderer->updateCubeTextures();
-                        renderer->render();
-                        idle();
-                    }
-                    else {
-                        finishAndQuit();
-                    }
-                    break;
-                case SDL_QUIT:
-                    SDL_Quit();
-                    exit(0);
-                    break;
-                default:
-                    break;
-            }
-        } while (SDL_PollEvent(&event));
-    }
-}

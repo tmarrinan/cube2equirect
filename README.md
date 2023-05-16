@@ -29,13 +29,11 @@ Converts cubemap data sets to an equirectuangular projection image
 
 ## Install ##
 
-### Mac OS X ###
+### Ubuntu ###
 
-* `brew install sdl2`
-* `brew install sdl2_image`
-* `brew install jpeg`
-* `brew install libpng`
-* `brew install ffmpeg` (optional - only needed if converting sequences of images to a video)
+* `apt install mesa-common-dev`
+* `apt install libegl-dev`
+* `apt install ffmpeg` (optional - only needed if converting sequences of images to a video)
 
 ## Build ##
 

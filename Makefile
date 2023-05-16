@@ -1,44 +1,43 @@
 ############
-MACHINE= $(shell uname -s)
+CC= gcc
+CXX= g++
+CCFLAGS= -g
+CXXFLAGS= -g
 
-ifeq ($(MACHINE),Darwin)
-	OPENGL_INC= -FOpenGL
-	OPENGL_LIB= -framework OpenGL
-	SDL_INC= `sdl2-config --cflags`
-	SDL_LIB= `sdl2-config --libs` -lSDL2_image
-	IMG_INC= -I/usr/local/include
-	IMG_LIB= -lpng -ljpeg
-else
-	OPENGL_INC= -I/usr/X11R6/include
-	OPENGL_LIB= -I/usr/lib64 -lGL -lGLU
-	SDL_INC= `sdl2-config --cflags`
-	SDL_LIB= `sdl2-config --libs` -lSDL2_image
-	IMG_INC= -I/usr/local/include
-	IMG_LIB= -lpng -ljpeg
-endif
+# include directories and libraries
+INC= -I./include
+LIB= -lEGL -lGL
 
 # object files have corresponding source files
 OBJDIR= objs
-OBJS= $(addprefix $(OBJDIR)/, main.o cube2equirect.o)
-CXX= g++
-COMPILER_FLAGS= -g
-INCLUDE= $(SDL_INC) $(IMG_INC) $(OPENGL_INC) 
-LIBS= $(SDL_LIB) $(IMG_LIB) $(OPENGL_LIB)
+C_SOURCES = $(wildcard src/*.c)
+CXX_SOURCES = $(wildcard src/m*.cpp)
+C_OBJS= $(patsubst src/%.c, $(OBJDIR)/%.o, $(C_SOURCES))
+CXX_OBJS= $(patsubst src/%.cpp, $(OBJDIR)/%.o, $(CXX_SOURCES))
 
-EXEC= cube2equirect
+# bin output
+BINDIR= bin
+EXEC= $(addprefix $(BINDIR)/, cube2equirect)
 
-$(EXEC): $(OBJS)
-	$(CXX) $(COMPILER_FLAGS) -o $(EXEC) $(OBJS) $(LIBS)
+
+mkdirs:= $(shell mkdir -p $(OBJDIR) $(BINDIR))
+
+
+
+# BUILD EVERYTHING
+all: $(EXEC)
+
+$(EXEC): $(C_OBJS) $(CXX_OBJS)
+	$(CXX) $(CXXFLAGS) -o $(EXEC) $(C_OBJS) $(CXX_OBJS) $(LIB)
+
+$(OBJDIR)/%.o: src/%.c
+	$(CC) -c $(CCFLAGS) -o $@ $< $(INC)
 
 $(OBJDIR)/%.o: src/%.cpp
-	$(CXX) -c $(COMPILER_FLAGS) -o $@ $< $(INCLUDE)
+	$(CXX) -c $(CXXFLAGS) -o $@ $< $(INC)
 
-all: $(OBJS)
 
-$(OBJS): | $(OBJDIR)
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-	
+# REMOVE OLD FILES
 clean:
-	rm -f $(EXEC) $(OBJS)
+	rm -f $(EXEC) $(C_OBJS) $(CXX_OBJS)
+
