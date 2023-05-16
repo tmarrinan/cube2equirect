@@ -4,10 +4,10 @@ Cubemap to Equirectangular Converter
 Converts cubemap data sets to an equirectuangular projection image
 
 ##### Cubemap: #####
-![Cubemap Image](https://drive.google.com/uc?export=view&id=0B3xEf6dg2km5dGNscGZ6c081VkE)
+![Cubemap Image](https://lh3.googleusercontent.com/drive-viewer/AFGJ81oQZ9Qt74gGEUdpwO9a5igSgZGkoACXNFozawYTmGAIZgEvrgM2ulOAtP2nkyRDotsBsoLJfZxjq2rQcxS6Vn7QHkqGZA_vHyolAFWKkitU-OFV3u69k7dwaT0c=s1600)
 
 ##### Equirectangular: #####
-![Equirectangular Image](https://drive.google.com/uc?export=view&id=0B3xEf6dg2km5NDlBcGRnczRESzQ)
+![Equirectangular Image](https://lh3.googleusercontent.com/drive-viewer/AFGJ81oSG0hI7OJjEW9jgdEvxO7K3QS1wSN3ENKL9pdjLyZ66YP6ICfDuhxWqxfw_c5JC4y9VBXWrQey7PWvfyZDtYi2Ea35Nt4AbkGXAELWb-K0DiO8d6DuhY9IWYlz=s1600)
 
 ## Run ##
 
