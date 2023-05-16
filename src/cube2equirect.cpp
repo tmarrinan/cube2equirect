@@ -1,15 +1,55 @@
+#include <sys/stat.h>
+#ifdef __linux__
+#define MESA_EGL_NO_X11_HEADERS
+#endif
+#include "glad/glad_egl.h"
+#include <EGL/egl.h>
+#include <GL/gl.h>
+#include "imageio.hpp"
 #include "cube2equirect.h"
 
-using namespace std;
+Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format)
+{
+    _input_dir = makePath(in_dir);
+    _output_dir = makePath(out_dir);
+    _output_format = out_format;
 
-cube2equirect::cube2equirect(SDL_Window *win, string exe) {
-    mainwindow = win;
-    exePath = exe;
-
-    frameCount = 0;
-    sprintf(frameIdx, "%06d", frameCount);
+    _frame_count = 0;
+    snprintf(_frame_idx, 7, "%06d", _frame_count);
+    
+    printf("cube2equirect: %s, %s, %s, %d, %s\n", _input_dir.c_str(), _output_dir.c_str(), _output_format.c_str(), _frame_count, _frame_idx);
 }
 
+Cube2Equirect::~Cube2Equirect()
+{
+}
+
+std::string Cube2Equirect::makePath(std::string path)
+{
+    if (path[path.length() - 1] != '/')
+    {
+        path += "/";
+    }
+    return path;
+}
+
+bool Cube2Equirect::hasMoreFrames()
+{
+    bool more = true;
+    if (_frame_count > 0)
+    {
+        more = false;
+    }
+    return more;
+}
+
+void Cube2Equirect::renderNextFrame()
+{
+    _frame_count++;
+}
+
+
+/*
 void cube2equirect::initGL(string inDir, string outDir, int outRes, string outFmt) {
     SDL_GL_SetSwapInterval(1);
 
@@ -379,3 +419,4 @@ bool cube2equirect::saveImagePNG(string filename, GLubyte *pixels, int width, in
     png_free(png, rows);
     return true;
 }
+*/

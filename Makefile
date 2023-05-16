@@ -11,7 +11,7 @@ LIB= -lEGL -lGL
 # object files have corresponding source files
 OBJDIR= objs
 C_SOURCES = $(wildcard src/*.c)
-CXX_SOURCES = $(wildcard src/m*.cpp)
+CXX_SOURCES = $(wildcard src/*.cpp)
 C_OBJS= $(patsubst src/%.c, $(OBJDIR)/%.o, $(C_SOURCES))
 CXX_OBJS= $(patsubst src/%.cpp, $(OBJDIR)/%.o, $(CXX_SOURCES))
 

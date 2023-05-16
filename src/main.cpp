@@ -10,11 +10,10 @@
 #include <EGL/egl.h>
 #include <GL/gl.h>
 
-//#include "cube2equirect.h"
+#include "cube2equirect.h"
 
 
 typedef struct AppData {
-    std::string exe_path;           // executable path
     std::string cube_data_dir;      // input image data directory
     std::string equirect_data_dir;  // output image/video data directory
     int width;                      // output image/video width
@@ -27,7 +26,6 @@ typedef struct AppData {
 
 
 void parseArguments(int argc, char **argv, AppData *app_ptr);
-std::string getExecutablePath(std::string exe);
 
 int main(int argc, char **argv) {
     if (argc < 3) {
@@ -111,8 +109,14 @@ int main(int argc, char **argv) {
     const unsigned char* glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
     printf("Using OpenGL %s, GLSL %s\n", gl_version, glsl_version);
 
+    // Convert cube maps to equirectangular images    
+    Cube2Equirect *converter = new Cube2Equirect(app.cube_data_dir, app.equirect_data_dir, app.out_format);
+    while (converter->hasMoreFrames()) {
+        converter->renderNextFrame();
+    }
 
     // Clean up
+    delete converter;
     eglTerminate(app.egl_display);
 
 
@@ -120,8 +124,7 @@ int main(int argc, char **argv) {
 }
 
 void parseArguments(int argc, char **argv, AppData *app_ptr) {
-    app_ptr->exe_path = getExecutablePath(argv[0]);
-    app_ptr->equirect_data_dir = app_ptr->exe_path + "output/";
+    app_ptr->equirect_data_dir = "output/";
     app_ptr->width = 3840;
     app_ptr->height = app_ptr->width / 2;
     app_ptr->out_format = "";
@@ -168,10 +171,5 @@ void parseArguments(int argc, char **argv, AppData *app_ptr) {
         fprintf(stderr, "please specify an input directory with cubemap images\n");
         exit(EXIT_FAILURE);
     }
-}
-
-std::string getExecutablePath(std::string exe) {
-    int sep = exe.rfind('/');
-    return exe.substr(0, sep+1);
 }
 
