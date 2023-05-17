@@ -1,11 +1,14 @@
 #include "cube2equirect.h"
 #include "imageio.hpp"
 
-Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format)
+Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format, int out_w, int out_h)
 {
     _input_dir = makePath(in_dir);
     _output_dir = makePath(out_dir);
     _output_format = out_format;
+    _output_width = out_w;
+    _output_height = out_h;
+    _output_pixels = new uint8_t[_output_width * _output_width * 4];
 
     _frame_count = 0;
     snprintf(_frame_idx, 7, "%06d", _frame_count);
@@ -18,22 +21,68 @@ Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::strin
 
 Cube2Equirect::~Cube2Equirect()
 {
+    delete[] _output_pixels;
 }
 
 // Public
 bool Cube2Equirect::hasMoreFrames()
 {
-    bool more = true;
-    if (_frame_count > 0)
-    {
-        more = false;
+    bool more = false;
+    
+    std::string next_image = _input_dir + _frame_idx + "_left." + _input_format;
+    struct stat info;
+    if (stat(next_image.c_str(), &info) == 0 && !(info.st_mode & S_IFDIR)) {
+        more = true;
     }
+
     return more;
 }
 
 void Cube2Equirect::renderNextFrame()
 {
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Update image textures
+    updateTextureFromImage(_input_dir + _frame_idx + "_left." + _input_format, _cube_textures[0]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_right." + _input_format, _cube_textures[1]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_bottom." + _input_format, _cube_textures[2]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_top." + _input_format, _cube_textures[3]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_back." + _input_format, _cube_textures[4]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_front." + _input_format, _cube_textures[5]);
+    
+    // Render equirect image
+    int i;
+    GLint cube_uniforms[6];
+    cube_uniforms[0] = _uniforms["cube_left"];
+    cube_uniforms[1] = _uniforms["cube_right"];
+    cube_uniforms[2] = _uniforms["cube_bottom"];
+    cube_uniforms[3] = _uniforms["cube_top"];
+    cube_uniforms[4] = _uniforms["cube_back"];
+    cube_uniforms[5] = _uniforms["cube_front"];
+    for (i = 0; i < 6; i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, _cube_textures[i]);
+        glUniform1i(cube_uniforms[i], i);
+    }
+    
+    glBindVertexArray(_vertex_array);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    
+    // Save pixel buffer as image
+    glReadPixels(0, 0, _output_width, _output_height, GL_RGBA, GL_UNSIGNED_BYTE, _output_pixels);
+    if (_output_format == "jpg")
+    {
+        iioWriteImageJpeg((_output_dir + "equirect_" + _frame_idx + ".jpg").c_str(), _output_width, _output_height, 4, 92, _output_pixels);
+    }
+    else
+    {
+        iioWriteImagePng((_output_dir + "equirect_" + _frame_idx + ".png").c_str(), _output_width, _output_height, 4, _output_pixels);
+    }
+    
+    
     _frame_count++;
+    snprintf(_frame_idx, 7, "%06d", _frame_count);
 }
 
 // Private
@@ -69,6 +118,8 @@ void Cube2Equirect::init()
     
     // Create cubemap textures
     createCubemapTextures();
+    
+    glUseProgram(_program);
 }
 
 void Cube2Equirect::createVertexArrayObject()
@@ -150,13 +201,6 @@ void Cube2Equirect::createCubemapTextures()
         fprintf(stderr, "Cubemap images not found in directory '%s'\n", _input_dir.c_str());
         exit(EXIT_FAILURE);
     }
-    
-    updateTextureFromImage(_input_dir + _frame_idx + "_left." + _input_format, _cube_textures[0]);
-    updateTextureFromImage(_input_dir + _frame_idx + "_right." + _input_format, _cube_textures[1]);
-    updateTextureFromImage(_input_dir + _frame_idx + "_bottom." + _input_format, _cube_textures[2]);
-    updateTextureFromImage(_input_dir + _frame_idx + "_top." + _input_format, _cube_textures[3]);
-    updateTextureFromImage(_input_dir + _frame_idx + "_back." + _input_format, _cube_textures[4]);
-    updateTextureFromImage(_input_dir + _frame_idx + "_front." + _input_format, _cube_textures[5]);
     
     glBindTexture(GL_TEXTURE_2D, 0);
 }

@@ -128,9 +128,10 @@ int main(int argc, char **argv) {
     printf("Using OpenGL %s, GLSL %s\n", gl_version, glsl_version);
 
     // Convert cube maps to equirectangular images    
-    Cube2Equirect *converter = new Cube2Equirect(app.cube_data_dir, app.equirect_data_dir, app.out_format);
+    Cube2Equirect *converter = new Cube2Equirect(app.cube_data_dir, app.equirect_data_dir, app.out_format, app.width, app.height);
     while (converter->hasMoreFrames()) {
         converter->renderNextFrame();
+        eglSwapBuffers(app.egl_display, app.egl_surface);
     }
     printf("glError: %d\n", glGetError());
 

@@ -12,6 +12,9 @@ private:
     std::string _input_format;
     std::string _output_dir;
     std::string _output_format;
+    int _output_width;
+    int _output_height;
+    uint8_t *_output_pixels;
     int _frame_count;
     char _frame_idx[7];
     GLuint _program;
@@ -63,7 +66,7 @@ private:
     */
 
 public:
-    Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format);
+    Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format, int out_w, int out_h);
     ~Cube2Equirect();
     
     bool hasMoreFrames();
