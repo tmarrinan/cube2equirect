@@ -9,6 +9,7 @@
 class Cube2Equirect {
 private:
     std::string _input_dir;
+    std::string _input_format;
     std::string _output_dir;
     std::string _output_format;
     int _frame_count;
@@ -17,9 +18,14 @@ private:
     GLint _vertex_position_attrib;
     GLint _vertex_texcoord_attrib;
     std::map<std::string,GLint> _uniforms;
+    GLuint _vertex_array;
+    GLuint _cube_textures[6];
     
     std::string makePath(std::string path);
     void init();
+    void createVertexArrayObject();
+    void createCubemapTextures();
+    void updateTextureFromImage(std::string filename, GLuint texture);
 
     /*
     GLuint vertex_array;

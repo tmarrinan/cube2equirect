@@ -10,6 +10,9 @@ Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::strin
     _frame_count = 0;
     snprintf(_frame_idx, 7, "%06d", _frame_count);
     
+    _vertex_position_attrib = 0;
+    _vertex_texcoord_attrib = 1;
+    
     init();
 }
 
@@ -57,8 +60,125 @@ void Cube2Equirect::init()
 
     // Get handles to uniform variables defined in the shaders
     glsl::getShaderProgramUniforms(_program, _uniforms);
+    
+    // Set background color
+    glClearColor(1.0, 1.0, 1.0, 1.0);
+    
+    // Create fullscreen quad
+    createVertexArrayObject();
+    
+    // Create cubemap textures
+    createCubemapTextures();
 }
 
+void Cube2Equirect::createVertexArrayObject()
+{
+    glGenVertexArrays(1, &_vertex_array);
+    glBindVertexArray(_vertex_array);
+    
+    // Vertices
+    GLuint vertex_position_buffer;
+    glGenBuffers(1, &vertex_position_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_position_buffer);
+    GLfloat vertices[] = {
+        -1.0, -1.0, -1.0,  // left,  bottom, back
+        -1.0,  1.0, -1.0,  // left,  top,    back
+         1.0, -1.0, -1.0,  // right, bottom, back
+         1.0,  1.0, -1.0   // right, top,    back
+    };
+    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(_vertex_position_attrib);
+    glVertexAttribPointer(_vertex_position_attrib, 3, GL_FLOAT, false, 0, 0);
+    
+    // Texture Coordinates
+    GLuint vertex_texcoord_buffer;
+    glGenBuffers(1, &vertex_texcoord_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_texcoord_buffer);
+    GLfloat texcoords[] = {
+        -1.0, -1.0,  // left,  bottom
+        -1.0,  1.0,  // left,  top
+         1.0, -1.0,  // right, bottom
+         1.0,  1.0   // right, top
+    };
+    glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(GLfloat), texcoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(_vertex_texcoord_attrib);
+    glVertexAttribPointer(_vertex_texcoord_attrib, 2, GL_FLOAT, false, 0, 0);
+    
+    // Faces of triangles
+    GLuint vertex_index_buffer;
+    glGenBuffers(1, &vertex_index_buffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_index_buffer);
+    GLushort vertex_indices[] = {
+         0, 3, 1,
+         3, 0, 2
+    };
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLushort), vertex_indices, GL_STATIC_DRAW);
+    
+    // Unbind data
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void Cube2Equirect::createCubemapTextures()
+{
+    int i;
+    glGenTextures(6, _cube_textures);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    for (i = 0; i < 6; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, _cube_textures[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+    
+    struct stat info;
+    if (stat((_input_dir + "000000_left.jpg").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR))
+    {
+        _input_format = "jpg";
+        if (_output_format != "jpg" && _output_format != "png") _output_format = "jpg";
+    }
+    else if (stat((_input_dir + "000000_left.png").c_str(), &info) == 0 && !(info.st_mode & S_IFDIR))
+    {
+        _input_format = "png";
+        if (_output_format != "jpg" && _output_format != "png") _output_format = "png";
+    }
+    else
+    {
+        fprintf(stderr, "Cubemap images not found in directory '%s'\n", _input_dir.c_str());
+        exit(EXIT_FAILURE);
+    }
+    
+    updateTextureFromImage(_input_dir + _frame_idx + "_left." + _input_format, _cube_textures[0]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_right." + _input_format, _cube_textures[1]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_bottom." + _input_format, _cube_textures[2]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_top." + _input_format, _cube_textures[3]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_back." + _input_format, _cube_textures[4]);
+    updateTextureFromImage(_input_dir + _frame_idx + "_front." + _input_format, _cube_textures[5]);
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Cube2Equirect::updateTextureFromImage(std::string filename, GLuint texture)
+{
+    int width, height;
+    int channels = 4;
+    uint8_t *pixels = iioReadImage(filename.c_str(), &width, &height, &channels);
+    
+    if (pixels == NULL)
+    {
+        fprintf(stderr, "Error: could not read image '%s'\n", filename.c_str());
+        exit(EXIT_FAILURE);
+    }
+    
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    iioFreeImage(pixels);
+}
 
 /*
 void cube2equirect::initGL(string inDir, string outDir, int outRes, string outFmt) {

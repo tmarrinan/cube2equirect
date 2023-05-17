@@ -132,6 +132,7 @@ int main(int argc, char **argv) {
     while (converter->hasMoreFrames()) {
         converter->renderNextFrame();
     }
+    printf("glError: %d\n", glGetError());
 
     // Clean up
     delete converter;
