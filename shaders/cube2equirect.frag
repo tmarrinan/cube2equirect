@@ -1,21 +1,21 @@
-#version 150
+#version 330
 
 #define M_PI 3.1415926535897932384626433832795
 
-uniform sampler2D cubeLeftImage;
-uniform sampler2D cubeRightImage;
-uniform sampler2D cubeBottomImage;
-uniform sampler2D cubeTopImage;
-uniform sampler2D cubeBackImage;
-uniform sampler2D cubeFrontImage;
+in vec2 texcoord;
 
-in vec2 vTexCoord;
+uniform sampler2D cube_left;
+uniform sampler2D cube_right;
+uniform sampler2D cube_bottom;
+uniform sampler2D cube_top;
+uniform sampler2D cube_back;
+uniform sampler2D cube_front;
 
 out vec4 FragColor;
 
 void main() {
-	float theta = vTexCoord.x * M_PI;
-	float phi = (vTexCoord.y * M_PI) / 2.0;
+	float theta = texcoord.x * M_PI;
+	float phi = (texcoord.y * M_PI) / 2.0;
 
 	float x = cos(phi) * sin(theta);
 	float y = sin(phi);
@@ -30,13 +30,13 @@ void main() {
 			scale = -1.0 / x;
 			px.x = ( z*scale + 1.0) / 2.0;
 			px.y = ( y*scale + 1.0) / 2.0;
-			src = texture(cubeLeftImage, px);
+			src = texture(cube_left, px);
 		}
 		else {
 			scale = 1.0 / x;
 			px.x = (-z*scale + 1.0) / 2.0;
 			px.y = ( y*scale + 1.0) / 2.0;
-			src = texture(cubeRightImage, px);
+			src = texture(cube_right, px);
 		}
 	}
 	else if (abs(y) >= abs(z)) {
@@ -44,13 +44,13 @@ void main() {
 			scale = -1.0 / y;
 			px.x = ( x*scale + 1.0) / 2.0;
 			px.y = ( z*scale + 1.0) / 2.0;
-			src = texture(cubeTopImage, px);
+			src = texture(cube_top, px);
 		}
 		else {
 			scale = 1.0 / y;
 			px.x = ( x*scale + 1.0) / 2.0;
 			px.y = (-z*scale + 1.0) / 2.0;
-			src = texture(cubeBottomImage, px);
+			src = texture(cube_bottom, px);
 		}
 	}
 	else {
@@ -58,13 +58,13 @@ void main() {
 			scale = -1.0 / z;
 			px.x = (-x*scale + 1.0) / 2.0;
 			px.y = ( y*scale + 1.0) / 2.0;
-			src = texture(cubeBackImage, px);
+			src = texture(cube_back, px);
 		}
 		else {
 			scale = 1.0 / z;
 			px.x = ( x*scale + 1.0) / 2.0;
 			px.y = ( y*scale + 1.0) / 2.0;
-			src = texture(cubeFrontImage, px);
+			src = texture(cube_front, px);
 		}
 	}
 

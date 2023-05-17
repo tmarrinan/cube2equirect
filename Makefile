@@ -6,7 +6,7 @@ CXXFLAGS= -g
 
 # include directories and libraries
 INC= -I./include
-LIB= -lEGL -lGL
+LIB=
 
 # object files have corresponding source files
 OBJDIR= objs

@@ -1,6 +1,10 @@
 #ifndef CUBE2EQUIRECT_H
 #define CUBE2EQUIRECT_H
+
 #include <string>
+#include <map>
+#include <sys/stat.h>
+#include "glslloader.h"
 
 class Cube2Equirect {
 private:
@@ -9,8 +13,13 @@ private:
     std::string _output_format;
     int _frame_count;
     char _frame_idx[7];
+    GLuint _program;
+    GLint _vertex_position_attrib;
+    GLint _vertex_texcoord_attrib;
+    std::map<std::string,GLint> _uniforms;
     
     std::string makePath(std::string path);
+    void init();
 
     /*
     GLuint vertex_array;
@@ -73,3 +82,4 @@ public:
 };
 
 #endif //CUBE2EQUIRECT_H
+

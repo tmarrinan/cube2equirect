@@ -1,12 +1,5 @@
-#include <sys/stat.h>
-#ifdef __linux__
-#define MESA_EGL_NO_X11_HEADERS
-#endif
-#include "glad/glad_egl.h"
-#include <EGL/egl.h>
-#include <GL/gl.h>
-#include "imageio.hpp"
 #include "cube2equirect.h"
+#include "imageio.hpp"
 
 Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format)
 {
@@ -17,22 +10,14 @@ Cube2Equirect::Cube2Equirect(std::string in_dir, std::string out_dir, std::strin
     _frame_count = 0;
     snprintf(_frame_idx, 7, "%06d", _frame_count);
     
-    printf("cube2equirect: %s, %s, %s, %d, %s\n", _input_dir.c_str(), _output_dir.c_str(), _output_format.c_str(), _frame_count, _frame_idx);
+    init();
 }
 
 Cube2Equirect::~Cube2Equirect()
 {
 }
 
-std::string Cube2Equirect::makePath(std::string path)
-{
-    if (path[path.length() - 1] != '/')
-    {
-        path += "/";
-    }
-    return path;
-}
-
+// Public
 bool Cube2Equirect::hasMoreFrames()
 {
     bool more = true;
@@ -46,6 +31,32 @@ bool Cube2Equirect::hasMoreFrames()
 void Cube2Equirect::renderNextFrame()
 {
     _frame_count++;
+}
+
+// Private
+std::string Cube2Equirect::makePath(std::string path)
+{
+    if (path[path.length() - 1] != '/')
+    {
+        path += "/";
+    }
+    return path;
+}
+
+void Cube2Equirect::init()
+{
+    _program = glsl::createShaderProgram("shaders/cube2equirect.vert", "shaders/cube2equirect.frag");
+    
+    // Specify input and output attributes for the GPU program
+    glBindAttribLocation(_program, _vertex_position_attrib, "vertex_position");
+    glBindAttribLocation(_program, _vertex_texcoord_attrib, "vertex_texcoord");
+    glBindFragDataLocation(_program, 0, "FragColor");
+
+    // Link compiled GPU program
+    glsl::linkShaderProgram(_program);
+
+    // Get handles to uniform variables defined in the shaders
+    glsl::getShaderProgramUniforms(_program, _uniforms);
 }
 
 

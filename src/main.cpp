@@ -3,12 +3,14 @@
 #include <cstring>
 #include <string>
 #include <sys/stat.h>
-#ifdef __linux__
+/*#ifdef __linux__
 #define MESA_EGL_NO_X11_HEADERS
 #endif
 #include "glad/glad_egl.h"
 #include <EGL/egl.h>
-#include <GL/gl.h>
+#include <GL/gl.h>*/
+#include "glad/egl.h"
+#include "glad/gl.h"
 
 #include "cube2equirect.h"
 
@@ -55,12 +57,25 @@ int main(int argc, char **argv) {
         fprintf(stderr, "\"%s\" is not a directory, please specify directory with cubemap images\n", app.cube_data_dir.c_str());
         return EXIT_FAILURE;
     }
-
-
+    
+    // Prepare for EGL initialization
+    int egl_version = gladLoaderLoadEGL(NULL);
+    if (!egl_version)
+    {
+        fprintf(stderr, "Error: could not pre-initialize GLAD EGL\n");
+        return EXIT_FAILURE;
+    }
+    
     // Initialize EGL
     app.egl_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     EGLint egl_major, egl_minor;
     eglInitialize(app.egl_display, &egl_major, &egl_minor);
+    egl_version = gladLoaderLoadEGL(app.egl_display);
+    if (!egl_version)
+    {
+        fprintf(stderr, "Error: could not initialize EGL display\n");
+        return EXIT_FAILURE;
+    }
 
     // Initialize GL attributes
     EGLint num_configs;
@@ -98,12 +113,15 @@ int main(int argc, char **argv) {
     };
     EGLContext egl_ctx = eglCreateContext(app.egl_display, egl_config, EGL_NO_CONTEXT, context_attribs);
     eglMakeCurrent(app.egl_display, app.egl_surface, app.egl_surface, egl_ctx);
-
+    
     // Initialize GLAD (OpenGL Extenstions)
-    if (!gladLoadEGLLoader((GLADloadproc)eglGetProcAddress)) {
-        fprintf(stderr, "Error: could not initialize GLAD EGL\n");
+    int ogl_version = gladLoaderLoadGL();
+    if (!ogl_version)
+    {
+        fprintf(stderr, "Error: could not initialize GLAD OpenGL extensions\n");
         return EXIT_FAILURE;
     }
+    
 
     const unsigned char* gl_version = glGetString(GL_VERSION);
     const unsigned char* glsl_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
@@ -117,7 +135,11 @@ int main(int argc, char **argv) {
 
     // Clean up
     delete converter;
+    gladLoaderUnloadGL();
+    eglDestroyContext(app.egl_display, egl_ctx);
+    eglDestroySurface(app.egl_display, app.egl_surface);
     eglTerminate(app.egl_display);
+    gladLoaderUnloadEGL();
 
 
     return EXIT_SUCCESS;

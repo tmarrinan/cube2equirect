@@ -1,3 +1,6 @@
+#ifndef IMAGEIO_HPP
+#define IMAGEIO_HPP
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
@@ -19,8 +22,10 @@ int iioWriteImageJpeg(const char *filename, int width, int height, int channels,
     return stbi_write_jpg(filename, width, height, channels, pixels, quality);
 }
 
-int ioWriteImagePng(const char *filename, int width, int height, int channels, uint8_t *pixels)
+int iioWriteImagePng(const char *filename, int width, int height, int channels, uint8_t *pixels)
 {
     return stbi_write_png(filename, width, height, channels, pixels, width * channels);
 }
+
+#endif // IMAGEIO_HPP
 

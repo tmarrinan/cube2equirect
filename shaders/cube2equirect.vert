@@ -1,11 +1,12 @@
-#version 150
+#version 330
 
-in vec3 aVertexPosition;
-in vec2 aVertexTextureCoord;
+in vec3 vertex_position;
+in vec2 vertex_texcoord;
 
-out vec2 vTexCoord;
+out vec2 texcoord;
 
 void main() {
-	vTexCoord = aVertexTextureCoord;
-	gl_Position = vec4(aVertexPosition, 1);
+	texcoord = vertex_texcoord;
+	gl_Position = vec4(vertex_position, 1.0);
 }
+
