@@ -133,7 +133,12 @@ int main(int argc, char **argv) {
         converter->renderNextFrame();
         eglSwapBuffers(app.egl_display, app.egl_surface);
     }
-    printf("glError: %d\n", glGetError());
+    
+    // Compile image sequence to video (if desired)
+    if (app.out_format == "mp4")
+    {
+    
+    }
 
     // Clean up
     delete converter;
