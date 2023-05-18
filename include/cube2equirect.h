@@ -30,47 +30,13 @@ private:
     void createCubemapTextures();
     void updateTextureFromImage(std::string filename, GLuint texture);
 
-    /*
-    GLuint vertex_array;
-    GLuint vertexPositionBuffer;
-    GLuint vertexTextureBuffer;
-    GLuint vertexIndexBuffer;
-
-    GLuint equirectFramebuffer;
-    GLuint equirectTexture;
-
-    GLuint cubeTextures[6];
-
-    GLuint shaderProgram;
-    GLint vertexPositionAttribute;
-    GLint vertexTextureAttribute;
-
-    GLint cubeLeftUniform;
-    GLint cubeRightUniform;
-    GLint cubeBottomUniform;
-    GLint cubeTopUniform;
-    GLint cubeBackUniform;
-    GLint cubeFrontUniform;
-
-    int frameCount;
-    char frameIdx[7];
-    std::string cubemapDir;
-    std::string equirectDir;
-    std::string imgExt;
-    std::string outExt;
-    std::string exePath;
-
-    GLint equirectW;
-    GLint equirectH;
-    GLubyte *equirectPixels;
-    */
-
 public:
     Cube2Equirect(std::string in_dir, std::string out_dir, std::string out_format, int out_w, int out_h);
     ~Cube2Equirect();
     
     bool hasMoreFrames();
     void renderNextFrame();
+    std::string getEquirectImageFormat();
 
     /*
     void initGL(std::string inDir, std::string outDir, int outRes, std::string outFmt);

@@ -3,12 +3,6 @@
 #include <cstring>
 #include <string>
 #include <sys/stat.h>
-/*#ifdef __linux__
-#define MESA_EGL_NO_X11_HEADERS
-#endif
-#include "glad/glad_egl.h"
-#include <EGL/egl.h>
-#include <GL/gl.h>*/
 #include "glad/egl.h"
 #include "glad/gl.h"
 
@@ -28,6 +22,7 @@ typedef struct AppData {
 
 
 void parseArguments(int argc, char **argv, AppData *app_ptr);
+void convertImageSequenceToVideo(std::string image_dir, std::string img_format, int image_framerate);
 
 int main(int argc, char **argv) {
     if (argc < 3) {
@@ -47,6 +42,8 @@ int main(int argc, char **argv) {
 
     AppData app;
     parseArguments(argc, argv, &app);
+    
+    printf("-----------------\n| Cube2Equirect |\n-----------------\n");
 
     struct stat info;
     if (stat(app.cube_data_dir.c_str(), &info) != 0) {
@@ -137,7 +134,7 @@ int main(int argc, char **argv) {
     // Compile image sequence to video (if desired)
     if (app.out_format == "mp4")
     {
-    
+        convertImageSequenceToVideo(app.equirect_data_dir, converter->getEquirectImageFormat(), app.video_framerate);
     }
 
     // Clean up
@@ -200,5 +197,37 @@ void parseArguments(int argc, char **argv, AppData *app_ptr) {
         fprintf(stderr, "please specify an input directory with cubemap images\n");
         exit(EXIT_FAILURE);
     }
+}
+
+void convertImageSequenceToVideo(std::string image_dir, std::string img_format, int image_framerate)
+{
+    char *ffmpeg_cmd = new char[512];
+    int framerate_mult = (24 % image_framerate == 0) ? (24 / image_framerate) : (24 / image_framerate) + 1;
+    int video_framerate = (image_framerate < 24) ? framerate_mult * image_framerate : image_framerate;
+#ifdef _WIN32
+    const char *o_null = "NUL";
+#else
+    const char *o_null = "/dev/null";
+#endif
+    snprintf(ffmpeg_cmd, 512, "ffmpeg -y -start_number 0 -r %d -i \"%sequirect_%%06d.%s\" -r %d -c:v libx264 -an -pix_fmt yuv420p \"%sequirect.mp4\" > %s 2>&1", image_framerate, image_dir.c_str(), img_format.c_str(), video_framerate, image_dir.c_str(), o_null);
+    
+    int err = system(ffmpeg_cmd);
+    if (err != 0)
+    {
+        fprintf(stderr, "Warning: ffmpeg conversion to mp4 not successful. Saved as image sequence instead.\n");
+    }
+    else
+    {
+        char *img_filename = new char[256];
+        int i = 0;
+        do
+        {
+            snprintf(img_filename, 256, "%sequirect_%06d.%s", image_dir.c_str(), i, img_format.c_str());
+            i++;
+        } while (remove(img_filename) == 0);
+        
+        delete[] img_filename;
+    }
+    delete[] ffmpeg_cmd;
 }
 

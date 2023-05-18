@@ -85,6 +85,11 @@ void Cube2Equirect::renderNextFrame()
     snprintf(_frame_idx, 7, "%06d", _frame_count);
 }
 
+std::string Cube2Equirect::getEquirectImageFormat()
+{
+    return _output_format;
+}
+
 // Private
 std::string Cube2Equirect::makePath(std::string path)
 {
